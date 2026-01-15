@@ -1,12 +1,21 @@
+import 'package:draftly/features/main/presentation/screens/main_screen.dart';
+import 'package:draftly/features/painter/presentation/screens/painter_screen.dart';
 import 'package:go_router/go_router.dart';
 
 import '/features/auth/presentation/screens/login_screen.dart';
 import '/features/auth/presentation/screens/register_screen.dart';
 
 final GoRouter router = GoRouter(
+  initialLocation: '/login',
   routes: <RouteBase>[
     GoRoute(
       path: '/',
+      builder: (context, state) {
+        return const MainScreen();
+      },
+    ),
+    GoRoute(
+      path: '/login',
       builder: (context, state) {
         return const LoginScreen();
       },
@@ -15,6 +24,12 @@ final GoRouter router = GoRouter(
       path: '/register',
       builder: (context, state) {
         return const RegisterScreen();
+      },
+    ),
+    GoRoute(
+      path: '/painter',
+      builder: (context, state) {
+        return const PainterScreen();
       },
     ),
   ],

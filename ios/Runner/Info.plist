@@ -38,5 +38,7 @@
 		</array>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<key>NSPhotoLibraryUsageDescription</key>
+        <string>Приложению требуется доступ к вашим фотографиям, чтобы установить их как фон.</string>
 	</dict>
 </plist>

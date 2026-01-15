@@ -17,6 +17,12 @@ class AppTypographyRoboto {
     height: 20 / 17,
     fontWeight: FontWeight.w500,
   );
+  static const TextStyle regular14px = TextStyle(
+    fontFamily: _fontFamily,
+    fontSize: 14,
+    height: 24 / 14,
+    fontWeight: FontWeight.w400,
+  );
 }
 
 @immutable
