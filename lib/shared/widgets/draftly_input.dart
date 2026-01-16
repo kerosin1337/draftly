@@ -1,10 +1,10 @@
 import 'dart:ui';
 
-import 'package:draftly/core/theme/app_typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 
 import '/core/theme/app_colors.dart';
+import '/core/theme/app_typography.dart';
 
 class DraftlyInput extends StatefulWidget {
   final String name;
@@ -55,11 +55,11 @@ class _DraftlyInputState extends State<DraftlyInput> {
       onTap: focusNode.requestFocus,
       child: Container(
         clipBehavior: Clip.hardEdge,
-        decoration: const ShapeDecoration(
+        decoration: ShapeDecoration(
           color: AppColors.innerShadow,
           shape: RoundedSuperellipseBorder(
-            borderRadius: BorderRadius.all(Radius.circular(8)),
-            side: BorderSide(
+            borderRadius: BorderRadius.circular(8),
+            side: const BorderSide(
               color: AppColors.grey,
               width: 0.5,
               strokeAlign: BorderSide.strokeAlignOutside,

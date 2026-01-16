@@ -36,9 +36,7 @@ class DraftlyButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       clipBehavior: Clip.antiAlias,
-      shape: const RoundedSuperellipseBorder(
-        borderRadius: BorderRadius.all(Radius.circular(8)),
-      ),
+      shape: RoundedSuperellipseBorder(borderRadius: BorderRadius.circular(8)),
       child: InkWell(
         onTap: disabled ? null : onPressed,
         child: Ink(

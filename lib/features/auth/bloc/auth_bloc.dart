@@ -1,6 +1,7 @@
-import 'package:draftly/shared/constants/error_message.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '/shared/constants/error_message.dart';
 
 part 'auth_event.dart';
 part 'auth_state.dart';
@@ -11,6 +12,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   AuthBloc() : super(AuthInitial()) {
     on<AuthLoginEvent>(_onLoginEvent);
     on<AuthRegisterEvent>(_onRegisterEvent);
+    on<AuthLogoutEvent>(_onLogoutEvent);
   }
 
   Future<void> _onLoginEvent(
@@ -26,7 +28,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             email: port['email'],
             password: port['password'],
           );
-      print(userCredential.user);
     } on FirebaseAuthException catch (e) {
       event.onError(getErrorMessage(e.code));
     } finally {
@@ -50,13 +51,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
       await userCredential.user!.updateDisplayName(event.port['name']);
       await userCredential.user!.reload();
-
-      print(userCredential);
     } on FirebaseAuthException catch (e) {
       print(e.code);
       event.onError(getErrorMessage(e.code));
     } finally {
       emit(AuthInitial());
+    }
+  }
+
+  Future<void> _onLogoutEvent(
+    AuthLogoutEvent event,
+    Emitter<AuthState> emit,
+  ) async {
+    try {
+      await auth.signOut();
+      event.onSuccess();
+    } on FirebaseAuthException catch (e) {
+      print(e.code);
     }
   }
 }

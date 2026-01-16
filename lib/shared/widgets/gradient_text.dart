@@ -1,6 +1,7 @@
-import 'package:draftly/core/theme/app_colors.dart';
-import 'package:draftly/core/theme/app_typography.dart';
 import 'package:flutter/material.dart';
+
+import '/core/theme/app_colors.dart';
+import '/core/theme/app_typography.dart';
 
 class GradientText extends StatelessWidget {
   final String text;

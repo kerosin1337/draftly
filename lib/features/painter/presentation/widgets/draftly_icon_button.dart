@@ -1,6 +1,7 @@
-import 'package:draftly/core/theme/app_colors.dart';
-import 'package:draftly/shared/widgets/draftly_svg.dart';
 import 'package:flutter/material.dart';
+
+import '/core/theme/app_colors.dart';
+import '/shared/widgets/draftly_svg.dart';
 
 class DraftlyIconButton extends StatelessWidget {
   final String assetName;

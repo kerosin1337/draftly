@@ -1,15 +1,15 @@
-import 'package:draftly/core/theme/app_colors.dart';
-import 'package:draftly/shared/widgets/draftly_input.dart';
-import 'package:draftly/shared/widgets/draftly_scaffold.dart';
-import 'package:draftly/shared/widgets/gradient_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 
+import '/core/theme/app_colors.dart';
 import '/features/auth/bloc/auth_bloc.dart';
 import '/features/auth/validators/register_validator.dart';
 import '/shared/widgets/draftly_button.dart';
+import '/shared/widgets/draftly_input.dart';
+import '/shared/widgets/draftly_scaffold.dart';
 import '/shared/widgets/draftly_snackbar.dart';
+import '/shared/widgets/gradient_text.dart';
 import '/shared/widgets/keyboard_visibility_builder.dart';
 
 class RegisterScreen extends StatefulWidget {

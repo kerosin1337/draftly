@@ -30,8 +30,6 @@ class DraftlySvg extends StatelessWidget {
       fit: fit,
       alignment: alignment,
       colorFilter: colorFilter,
-      // placeholderBuilder: (context) =>
-      //     Skeleton(width: width ?? 24, height: height ?? 24, borderRadius: 8),
     );
   }
 }

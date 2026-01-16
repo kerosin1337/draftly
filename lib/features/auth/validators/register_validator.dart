@@ -1,7 +1,8 @@
-import 'package:draftly/shared/constants/error_message.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
+
+import '/shared/constants/error_message.dart';
 
 class RegisterValidator {
   final GlobalKey<FormBuilderState> _formKey;

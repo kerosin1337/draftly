@@ -1,5 +1,5 @@
 name: draftly
-description: "A new Flutter project."
+description: "An easy way to draw with authorization"
 
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
@@ -28,6 +28,10 @@ dependencies:
   share_plus: 12.0.1
   path_provider: 2.1.5
   image_picker: 1.2.1
+  cloud_firestore: 6.1.1
+  saver_gallery: 4.1.0
+  flutter_local_notifications: 19.5.0
+  connectivity_plus: 7.0.0
 
 dev_dependencies:
   flutter_test:
@@ -46,11 +50,17 @@ flutter:
 
     - assets/icons/linear/close-circle.svg
     - assets/icons/linear/download.svg
+    - assets/icons/linear/arror-left.svg
+    - assets/icons/linear/check.svg
 
     - assets/icons/bold/gallery.svg
     - assets/icons/bold/edit.svg
     - assets/icons/bold/erase.svg
     - assets/icons/bold/palette.svg
+    - assets/icons/bold/close-circle.svg
+    - assets/icons/bold/paint-roller.svg
+
+    - assets/icons/broken/logout.svg
 
   fonts:
     - family: PressStart2P

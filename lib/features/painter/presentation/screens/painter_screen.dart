@@ -1,27 +1,62 @@
-import 'dart:io';
+import 'dart:convert';
 
-import 'package:draftly/features/painter/presentation/widgets/draftly_icon_button.dart';
-import 'package:draftly/shared/constants/asset_paths.dart';
-import 'package:draftly/shared/widgets/draftly_scaffold.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_drawing_board/flutter_drawing_board.dart';
-import 'package:flutter_drawing_board/paint_contents.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:saver_gallery/saver_gallery.dart';
+
+import '/core/services/notification.dart';
+import '/features/main/bloc/main_bloc.dart';
+import '/features/main/data/models/image_model.dart';
+import '/features/painter/presentation/widgets/painter_actions.dart';
+import '/shared/constants/asset_paths.dart';
+import '/shared/widgets/draftly_scaffold.dart';
+import '/shared/widgets/draftly_svg.dart';
+
+class PainterData {
+  final String? imagePath;
+  final Color? backgroundColor;
+
+  const PainterData({this.imagePath, this.backgroundColor});
+
+  PainterData copyWith({
+    String? Function()? imagePath,
+    Color? backgroundColor,
+  }) {
+    return PainterData(
+      imagePath: imagePath != null ? imagePath() : this.imagePath,
+      backgroundColor: backgroundColor ?? this.backgroundColor,
+    );
+  }
+}
 
 class PainterScreen extends StatefulWidget {
-  const PainterScreen({super.key});
+  final ImageModel? imageModel;
+
+  const PainterScreen({super.key, required this.imageModel});
 
   @override
   State<PainterScreen> createState() => _PainterScreenState();
 }
 
 class _PainterScreenState extends State<PainterScreen> {
-  final DrawingController drawingController = DrawingController();
+  late final MainBloc mainBloc = context.read<MainBloc>();
 
-  String? imagePath;
+  final DrawingController drawingController = DrawingController();
+  final ValueNotifier<PainterData> painterDataNotifier = ValueNotifier(
+    const PainterData(),
+  );
+
+  String? get imagePath => painterDataNotifier.value.imagePath;
+
+  Color? get backgroundColor => painterDataNotifier.value.backgroundColor;
+
+  ImageModel? get imageModel => widget.imageModel;
+
+  bool get isEdit => imageModel != null;
+
+  String get title => isEdit ? 'Редактирование' : 'Новое изображение';
 
   @override
   void dispose() {
@@ -32,13 +67,22 @@ class _PainterScreenState extends State<PainterScreen> {
   @override
   Widget build(BuildContext context) {
     return DraftlyScaffold(
+      title: title,
+      trailing: IconButton(
+        iconSize: 24,
+        icon: const DraftlySvg(
+          assetName: SvgAsset.linearCheck,
+          width: 24,
+          height: 24,
+        ),
+        onPressed: handleSaveImage,
+      ),
       body: Column(
         spacing: 24,
         children: [
-          actionButtons(),
-          DrawingBar(
-            controller: drawingController,
-            tools: [DefaultActionItem.slider()],
+          PainterActions(
+            drawingController: drawingController,
+            painterDataNotifier: painterDataNotifier,
           ),
           Expanded(
             child: LayoutBuilder(
@@ -46,16 +90,21 @@ class _PainterScreenState extends State<PainterScreen> {
                 return DrawingBoard(
                   controller: drawingController,
                   boardScaleEnabled: false,
-                  background: Container(
-                    width: constraints.maxWidth,
-                    height: constraints.maxHeight,
-                    decoration: ShapeDecoration(
-                      shape: const RoundedSuperellipseBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(20)),
-                      ),
-                      image: canvas(),
-                      color: Colors.white,
-                    ),
+                  background: ValueListenableBuilder(
+                    valueListenable: painterDataNotifier,
+                    builder: (context, value, child) {
+                      return Container(
+                        width: constraints.maxWidth,
+                        height: constraints.maxHeight,
+                        decoration: ShapeDecoration(
+                          shape: RoundedSuperellipseBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          image: canvas(),
+                          color: backgroundColor ?? Colors.white,
+                        ),
+                      );
+                    },
                   ),
                 );
               },
@@ -69,124 +118,48 @@ class _PainterScreenState extends State<PainterScreen> {
   DecorationImage? canvas() {
     if (imagePath != null) {
       return DecorationImage(image: AssetImage(imagePath!), fit: BoxFit.cover);
+    } else if (imageModel != null && backgroundColor == null) {
+      return DecorationImage(
+        image: MemoryImage(base64Decode(imageModel!.image)),
+        fit: BoxFit.cover,
+      );
     }
     return null;
   }
 
-  Widget actionButtons() {
-    return Row(
-      spacing: 12,
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        DraftlyIconButton(
-          assetName: SvgAsset.linearDownload,
-          onPressed: handleDownload,
-        ),
-        DraftlyIconButton(
-          assetName: SvgAsset.boldGallery,
-          onPressed: () async {
-            final ImagePicker picker = ImagePicker();
-            final image = await picker.pickImage(source: ImageSource.gallery);
-            if (image != null) {
-              setState(() {
-                imagePath = image.path;
-              });
-            }
-          },
-        ),
-        DraftlyIconButton(
-          assetName: SvgAsset.boldEdit,
-          onPressed: () => drawingController.setPaintContent(SimpleLine()),
-        ),
-        DraftlyIconButton(
-          assetName: SvgAsset.boldErase,
-          onPressed: () => drawingController.setPaintContent(Eraser()),
-        ),
-        Builder(
-          builder: (context) {
-            return DraftlyIconButton(
-              assetName: SvgAsset.boldPalette,
-              onPressed: () async {
-                final offset = (context.findRenderObject() as RenderBox)
-                    .localToGlobal(Offset.zero);
-                print(Colors.primaries.first.keys);
-                showMenu<dynamic>(
-                  useRootNavigator: true,
-                  context: context,
-                  position: RelativeRect.fromLTRB(
-                    offset.dx,
-                    offset.dy,
-                    100000,
-                    0,
-                  ),
-                  popUpAnimationStyle: AnimationStyle.noAnimation,
-                  constraints: const BoxConstraints(),
-                  items: [
-                    PopupMenuItem(
-                      height: 0,
-                      padding: EdgeInsets.zero,
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () async {},
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          child: Column(
-                            children: Colors.primaries.reversed
-                                .map(
-                                  (materialColor) => Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: materialColor.keys
-                                        .map(
-                                          (shade) => GestureDetector(
-                                            onTap: () {
-                                              drawingController.setStyle(
-                                                color: materialColor[shade],
-                                              );
-                                              context.pop();
-                                            },
-                                            child: Container(
-                                              color: materialColor[shade],
-                                              width: 26,
-                                              height: 26,
-                                            ),
-                                          ),
-                                        )
-                                        .toList(),
-                                  ),
-                                )
-                                .toList(),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  Future<void> handleDownload() async {
+  Future<void> handleSaveImage() async {
     final image = await drawingController.getImageData();
     if (image?.buffer != null) {
-      final pngBytes = image!.buffer.asUint8List();
+      final imageBytes = image!.buffer.asUint8List();
+      final base64String = base64.encode(imageBytes);
+      final fileName =
+          imageModel?.fileName ??
+              'drawing_${DateTime
+                  .now()
+                  .millisecondsSinceEpoch}.png';
 
-      final tempDir = await getTemporaryDirectory();
-      final filePath =
-          '${tempDir.path}/drawing_${DateTime.now().millisecondsSinceEpoch}.png';
+      mainBloc.add(
+        isEdit
+            ? MainUpdateImageEvent(id: imageModel!.id, image: base64String)
+            : MainSaveImageEvent(
+          port: {'fileName': fileName, 'image': base64String},
+        ),
+      );
 
-      final file = File(filePath);
-      await file.writeAsBytes(pngBytes);
+      await SaverGallery.saveImage(
+        imageBytes,
+        skipIfExists: false,
+        fileName: fileName,
+      );
 
-      await SharePlus.instance.share(ShareParams(files: [XFile(filePath)]));
+      NotificationService.showSimpleNotification(
+        title: 'Успешно!',
+        body: 'Рисунок сохранен.',
+      );
 
-      await file.delete();
+      if (mounted) {
+        context.pop();
+      }
     }
   }
 }

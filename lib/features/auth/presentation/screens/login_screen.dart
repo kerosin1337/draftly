@@ -1,19 +1,22 @@
 import 'dart:async';
+import 'dart:ui';
 
-import 'package:draftly/features/auth/bloc/auth_bloc.dart';
-import 'package:draftly/features/auth/validators/login_validator.dart';
-import 'package:draftly/shared/widgets/draftly_input.dart';
-import 'package:draftly/shared/widgets/draftly_scaffold.dart';
-import 'package:draftly/shared/widgets/gradient_text.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:go_router/go_router.dart';
 
+import '/features/auth/bloc/auth_bloc.dart';
+import '/features/auth/validators/login_validator.dart';
+import '/shared/constants/durations.dart';
+import '/shared/widgets/draftly_button.dart';
+import '/shared/widgets/draftly_input.dart';
+import '/shared/widgets/draftly_scaffold.dart';
 import '/shared/widgets/draftly_snackbar.dart';
+import '/shared/widgets/gradient_text.dart';
 import '/shared/widgets/keyboard_visibility_builder.dart';
-import '../../../../shared/widgets/draftly_button.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -23,11 +26,16 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final Connectivity connectivity = Connectivity();
+  StreamSubscription<List<ConnectivityResult>>? connectivitySubscription;
+
   StreamSubscription<User?>? streamSubscription;
 
   final formKey = GlobalKey<FormBuilderState>();
 
   late final AuthBloc authBloc = context.read<AuthBloc>();
+
+  bool isLoading = true;
 
   @override
   void initState() {
@@ -35,76 +43,108 @@ class _LoginScreenState extends State<LoginScreen> {
     streamSubscription = FirebaseAuth.instance.authStateChanges().listen((
       user,
     ) {
-      if (user != null && mounted) {
-        context.go('/');
+      Future.delayed(defaultDelay, () {
+        if (user != null && mounted) {
+          context.go('/');
+        }
+        if (isLoading) {
+          setState(() {
+            isLoading = false;
+          });
+        }
+      });
+    });
+    connectivitySubscription = connectivity.onConnectivityChanged.listen((
+      state,
+    ) {
+      if (state.contains(ConnectivityResult.none) && mounted) {
+        DraftlySnackbar.showSnackBar(
+          context,
+          'Отсутсвует подключение к интернету',
+        );
       }
     });
   }
 
   @override
   void dispose() {
+    connectivitySubscription?.cancel();
     streamSubscription?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return KeyboardVisibilityBuilder(
-      builder: (context, isKeyboardVisible, _) {
-        return DraftlyScaffold(
-          isScrollable: isKeyboardVisible,
-          body: FormBuilder(
-            key: formKey,
-            child: Column(
-              spacing: 20,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Visibility(
-                  visible: !isKeyboardVisible,
-                  child: const Spacer(flex: 2),
+    return Stack(
+      children: [
+        KeyboardVisibilityBuilder(
+          builder: (context, isKeyboardVisible, _) {
+            return DraftlyScaffold(
+              isScrollable: isKeyboardVisible,
+              body: FormBuilder(
+                key: formKey,
+                child: Column(
+                  spacing: 20,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Visibility(
+                      visible: !isKeyboardVisible,
+                      child: const Spacer(flex: 2),
+                    ),
+                    const GradientText('Вход'),
+                    DraftlyInput(
+                      name: 'email',
+                      title: 'e-mail',
+                      placeholder: 'Введите электронную почту',
+                      validator: LoginValidator.email,
+                      inputType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
+                    ),
+                    DraftlyInput(
+                      name: 'password',
+                      title: 'Подтверждение пароля',
+                      placeholder: 'Введите пароль',
+                      isPassword: true,
+                      validator: LoginValidator.password,
+                    ),
+                    Visibility(
+                      visible: !isKeyboardVisible,
+                      child: const Spacer(),
+                    ),
+                  ],
                 ),
-                const GradientText('Вход'),
-                DraftlyInput(
-                  name: 'email',
-                  title: 'e-mail',
-                  placeholder: 'Введите электронную почту',
-                  validator: LoginValidator.email,
-                  inputType: TextInputType.emailAddress,
-                  textInputAction: TextInputAction.next,
-                ),
-                DraftlyInput(
-                  name: 'password',
-                  title: 'Подтверждение пароля',
-                  placeholder: 'Введите пароль',
-                  isPassword: true,
-                  validator: LoginValidator.password,
-                ),
-                Visibility(visible: !isKeyboardVisible, child: const Spacer()),
-              ],
+              ),
+              bottomChild: Column(
+                spacing: 20,
+                children: [
+                  BlocBuilder<AuthBloc, AuthState>(
+                    builder: (context, state) {
+                      return DraftlyButton(
+                        text: 'Войти',
+                        onPressed: handleLogin,
+                        disabled: state is AuthLoading,
+                      );
+                    },
+                  ),
+                  DraftlyButton(
+                    text: 'Регистрация',
+                    type: DraftlyButtonType.stroke,
+                    onPressed: handleNavigateRegister,
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+        if (isLoading)
+          Positioned.fill(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: const Center(child: CircularProgressIndicator()),
             ),
           ),
-          bottomChild: Column(
-            spacing: 20,
-            children: [
-              BlocBuilder<AuthBloc, AuthState>(
-                builder: (context, state) {
-                  return DraftlyButton(
-                    text: 'Войти',
-                    onPressed: handleLogin,
-                    disabled: state is AuthLoading,
-                  );
-                },
-              ),
-              DraftlyButton(
-                text: 'Регистрация',
-                type: DraftlyButtonType.stroke,
-                onPressed: handleNavigateRegister,
-              ),
-            ],
-          ),
-        );
-      },
+      ],
     );
   }
 

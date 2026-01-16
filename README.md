@@ -1,16 +1,22 @@
-# draftly
+# Draftly
 
-A new Flutter project.
+**Draftly** — простое приложение для рисования с поддержкой авторизации пользователей.
 
-## Getting Started
+## Возможности
 
-This project is a starting point for a Flutter application.
+- Авторизация и аутентификация пользователей
+- Рисование и сохранение набросков
+- Хранение пользовательских данных в облаке
 
-A few resources to get you started if this is your first Flutter project:
+## Архитектура
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Приложение построено с использованием:
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- **Clean Architecture** — для четкого разделения слоёв и ответственности
+- **Feature-Sliced Design** — для удобной масштабируемости и поддержки проекта
+
+## Используемые технологии
+
+- **Bloc** — управление состоянием
+- **Firebase** — аутентификация и работа с данными
+- **GoRouter** — навигация и маршрутизация  

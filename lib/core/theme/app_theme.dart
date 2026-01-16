@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 
 import '/core/theme/app_colors.dart';
+import '/shared/constants/asset_paths.dart';
+import '/shared/widgets/draftly_svg.dart';
+import 'app_typography.dart';
 
 ThemeData appTheme = ThemeData(
   primaryColor: AppColors.grey,
   appBarTheme: AppBarThemeData(
-    backgroundColor: const Color(0xffc4c4c4).withAlpha((255 * 0.01).toInt()),
-    shape: const RoundedSuperellipseBorder(
-      borderRadius: BorderRadius.vertical(bottom: Radius.circular(8)),
+    backgroundColor: Colors.transparent,
+    titleTextStyle: AppTypographyRoboto.regular17px.copyWith(
+      color: AppColors.white,
     ),
     elevation: 0,
   ),
@@ -34,6 +37,13 @@ ThemeData appTheme = ThemeData(
     shape: RoundedSuperellipseBorder(borderRadius: BorderRadius.circular(14)),
     elevation: 1,
     menuPadding: const EdgeInsets.all(16),
+  ),
+  actionIconTheme: ActionIconThemeData(
+    backButtonIconBuilder: (context) => const DraftlySvg(
+      assetName: SvgAsset.linearArrowLeft,
+      width: 24,
+      height: 24,
+    ),
   ),
 );
 

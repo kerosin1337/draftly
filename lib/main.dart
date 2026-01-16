@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:draftly/shared/constants/asset_paths.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
@@ -12,6 +11,9 @@ import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:inspector/inspector.dart';
 
 import '/core/router/router.dart';
+import '/features/main/bloc/main_bloc.dart';
+import '/shared/constants/asset_paths.dart';
+import 'core/services/notification.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/bloc/auth_bloc.dart';
 import 'firebase_options.dart';
@@ -22,6 +24,8 @@ void main() async {
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  await NotificationService.initialize();
 
   runApp(const MyApp());
 }
@@ -62,7 +66,10 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
-      providers: [BlocProvider(create: (context) => AuthBloc())],
+      providers: [
+        BlocProvider(create: (context) => AuthBloc()),
+        BlocProvider(create: (context) => MainBloc()),
+      ],
       child: MaterialApp.router(
         routerConfig: router,
         title: 'Draftly',
