@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -58,6 +60,8 @@ class _PainterScreenState extends State<PainterScreen> {
 
   String get title => isEdit ? 'Редактирование' : 'Новое изображение';
 
+  bool isSaving = false;
+
   @override
   void dispose() {
     drawingController.dispose();
@@ -67,6 +71,7 @@ class _PainterScreenState extends State<PainterScreen> {
   @override
   Widget build(BuildContext context) {
     return DraftlyScaffold(
+      isLoading: isSaving,
       title: title,
       trailing: IconButton(
         iconSize: 24,
@@ -128,24 +133,52 @@ class _PainterScreenState extends State<PainterScreen> {
   }
 
   Future<void> handleSaveImage() async {
-    final image = await drawingController.getImageData();
-    if (image?.buffer != null) {
-      final imageBytes = image!.buffer.asUint8List();
-      final base64String = base64.encode(imageBytes);
-      final fileName =
-          imageModel?.fileName ??
-              'drawing_${DateTime
-                  .now()
-                  .millisecondsSinceEpoch}.png';
+    setState(() {
+      isSaving = true;
+    });
+    try {
+      final completer = Completer();
+      final image = await drawingController.getImageData();
+      if (image?.buffer != null) {
+        final imageBytes = image!.buffer.asUint8List();
+        final base64String = base64.encode(imageBytes);
+        final fileName =
+            imageModel?.fileName ??
+            'drawing_${DateTime.now().millisecondsSinceEpoch}.png';
 
-      mainBloc.add(
-        isEdit
-            ? MainUpdateImageEvent(id: imageModel!.id, image: base64String)
-            : MainSaveImageEvent(
-          port: {'fileName': fileName, 'image': base64String},
-        ),
-      );
+        final onSuccess = handleOnSuccessSaveImage(
+          imageBytes,
+          fileName,
+          completer,
+        );
 
+        mainBloc.add(
+          isEdit
+              ? MainUpdateImageEvent(
+                  id: imageModel!.id,
+                  image: base64String,
+                  onSuccess: onSuccess,
+                )
+              : MainSaveImageEvent(
+                  port: {'fileName': fileName, 'image': base64String},
+                  onSuccess: onSuccess,
+                ),
+        );
+      }
+      await completer.future;
+    } finally {
+      setState(() {
+        isSaving = false;
+      });
+    }
+  }
+
+  Function() handleOnSuccessSaveImage(
+    Uint8List imageBytes,
+    String fileName,
+    Completer completer,
+  ) {
+    return () async {
       await SaverGallery.saveImage(
         imageBytes,
         skipIfExists: false,
@@ -160,6 +193,8 @@ class _PainterScreenState extends State<PainterScreen> {
       if (mounted) {
         context.pop();
       }
-    }
+
+      completer.complete();
+    };
   }
 }

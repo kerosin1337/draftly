@@ -9,13 +9,17 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:inspector/inspector.dart';
+import 'package:internet_connection_checker/internet_connection_checker.dart';
 
 import '/core/router/router.dart';
+import '/core/services/notification.dart';
+import '/core/theme/app_theme.dart';
+import '/features/auth/bloc/auth_bloc.dart';
 import '/features/main/bloc/main_bloc.dart';
 import '/shared/constants/asset_paths.dart';
-import 'core/services/notification.dart';
-import 'core/theme/app_theme.dart';
-import 'features/auth/bloc/auth_bloc.dart';
+import '/shared/constants/error_message.dart';
+import '/shared/constants/urls.dart';
+import '/shared/widgets/draftly_snackbar.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -38,15 +42,24 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  late final InternetConnectionChecker internetChecker;
+  StreamSubscription<InternetConnectionStatus>? connectivitySubscription;
+
   final authBroadcastStream = FirebaseAuth.instance
       .authStateChanges()
       .asBroadcastStream();
 
   StreamSubscription<User?>? subAuthStream;
 
+  InternetConnectionStatus? prevStatus;
+
   @override
   void initState() {
     super.initState();
+
+    internetChecker = InternetConnectionChecker.createInstance(
+      addresses: [AddressCheckOption(uri: Uri.parse(urlCheck))],
+    );
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await Future.wait([
@@ -59,6 +72,7 @@ class _MyAppState extends State<MyApp> {
 
   @override
   void dispose() {
+    connectivitySubscription?.cancel();
     subAuthStream?.cancel();
     super.dispose();
   }
@@ -84,6 +98,7 @@ class _MyAppState extends State<MyApp> {
         debugShowCheckedModeBanner: false,
         builder: (context, child) {
           if (child != null) {
+            initConnectChecker(context);
             return Inspector(isEnabled: kDebugMode, child: child);
           }
           return const SizedBox.shrink();
@@ -95,5 +110,27 @@ class _MyAppState extends State<MyApp> {
         ),
       ),
     );
+  }
+
+  void initConnectChecker(BuildContext context) {
+    connectivitySubscription?.cancel();
+    connectivitySubscription = internetChecker.onStatusChange.listen((status) {
+      if (context.mounted) {
+        final String? message = switch ((status, prevStatus)) {
+          (
+            InternetConnectionStatus.connected,
+            InternetConnectionStatus.disconnected,
+          ) =>
+            'connected',
+          (InternetConnectionStatus.disconnected, _) => 'disconnected',
+          _ => null,
+        };
+
+        prevStatus = status;
+        if (message != null) {
+          DraftlySnackbar.showSnackBar(context, getErrorMessage(message));
+        }
+      }
+    });
   }
 }

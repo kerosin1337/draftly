@@ -1,11 +1,13 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:collection/collection.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '/features/main/data/models/image_model.dart';
+import '/shared/constants/numbers.dart';
 
 part 'main_event.dart';
 part 'main_state.dart';
@@ -31,13 +33,22 @@ class MainBloc extends Bloc<MainEvent, MainState> {
     Emitter<MainState> emit,
   ) async {
     try {
-      await imagesCollection.add({
-        ...event.port,
+      imagesSubscription?.cancel();
+      final image = event.port['image'] as String;
+
+      final imageRef = await imagesCollection.add({
+        'fileName': event.port['fileName'],
         'userId': auth.currentUser?.uid,
         'userName': auth.currentUser?.displayName,
       });
-    } catch (e) {
-      print(e);
+
+      await _setChunks(image, imageRef);
+
+      add(MainGetImagesEvent());
+
+      event.onSuccess();
+    } on FirebaseException catch (e) {
+      print(e.message);
     }
   }
 
@@ -46,7 +57,24 @@ class MainBloc extends Bloc<MainEvent, MainState> {
     Emitter<MainState> emit,
   ) async {
     try {
-      await imagesCollection.doc(event.id).update({'image': event.image});
+      imagesSubscription?.cancel();
+
+      final imageRef = imagesCollection.doc(event.id);
+
+      final chunksSnapshot = await imageRef.collection('chunks').get();
+
+      final batch = FirebaseFirestore.instance.batch();
+      for (final doc in chunksSnapshot.docs) {
+        batch.delete(doc.reference);
+      }
+
+      await batch.commit();
+
+      await _setChunks(event.image, imageRef);
+
+      add(MainGetImagesEvent());
+
+      event.onSuccess();
     } catch (e) {
       print(e);
     }
@@ -62,15 +90,26 @@ class MainBloc extends Bloc<MainEvent, MainState> {
       imagesSubscription = imagesCollection
           .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
           .snapshots()
-          .listen((data) {
-            final images = data.docs
-                .map(
-                  (d) => ImageModel.fromMap({
-                    'id': d.id,
-                    ...d.data() as Map<String, dynamic>,
-                  }),
-                )
-                .toList();
+          .listen((data) async {
+            final images = await Future.wait(
+              data.docs.map((d) async {
+                final chunksSnapshot = await imagesCollection
+                    .doc(d.id)
+                    .collection('chunks')
+                    .orderBy('index')
+                    .get();
+
+                final imageBase64 = chunksSnapshot.docs
+                    .map((chunk) => chunk.data()['data'])
+                    .join();
+
+                return ImageModel.fromMap({
+                  'id': d.id,
+                  'image': imageBase64,
+                  ...d.data() as Map<String, dynamic>,
+                });
+              }).toList(),
+            );
             add(MainSetImagesEvent(images));
           });
     } catch (e) {
@@ -97,5 +136,24 @@ class MainBloc extends Bloc<MainEvent, MainState> {
   Future<void> close() {
     imagesSubscription?.cancel();
     return super.close();
+  }
+
+  _setChunks(String image, DocumentReference imageRef) async {
+    final List<String> chunks = [];
+    for (int i = 0; i < image.length; i += chunkSize) {
+      final end = (i + chunkSize < image.length) ? i + chunkSize : image.length;
+      final chunkValue = image.substring(i, end);
+
+      chunks.add(chunkValue);
+    }
+
+    final batch = FirebaseFirestore.instance.batch();
+
+    chunks.forEachIndexed((index, value) {
+      final chunkRef = imageRef.collection('chunks').doc('imageChunk$index');
+      batch.set(chunkRef, {'data': value, 'index': index});
+    });
+
+    await batch.commit();
   }
 }

@@ -28,9 +28,13 @@ class PainterActions extends StatelessWidget {
       spacing: 12,
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        DraftlyIconButton(
-          assetName: SvgAsset.linearDownload,
-          onPressed: handleDownload,
+        Builder(
+          builder: (context) {
+            return DraftlyIconButton(
+              assetName: SvgAsset.linearDownload,
+              onPressed: handleDownload(context),
+            );
+          },
         ),
         DraftlyIconButton(
           assetName: SvgAsset.boldGallery,
@@ -190,21 +194,32 @@ class PainterActions extends StatelessWidget {
     );
   }
 
-  Future<void> handleDownload() async {
-    final image = await drawingController.getImageData();
-    if (image?.buffer != null) {
-      final pngBytes = image!.buffer.asUint8List();
+  Function() handleDownload(BuildContext context) {
+    return () async {
+      final image = await drawingController.getImageData();
+      if (image?.buffer != null) {
+        final pngBytes = image!.buffer.asUint8List();
 
-      final tempDir = await getTemporaryDirectory();
-      final filePath =
-          '${tempDir.path}/drawing_${DateTime.now().millisecondsSinceEpoch}.png';
+        final tempDir = await getTemporaryDirectory();
+        final filePath =
+            '${tempDir.path}/drawing_${DateTime.now().millisecondsSinceEpoch}.png';
 
-      final file = File(filePath);
-      await file.writeAsBytes(pngBytes);
+        final file = File(filePath);
+        await file.writeAsBytes(pngBytes);
 
-      await SharePlus.instance.share(ShareParams(files: [XFile(filePath)]));
+        if (context.mounted) {
+          final box = context.findRenderObject() as RenderBox?;
 
-      await file.delete();
-    }
+          await SharePlus.instance.share(
+            ShareParams(
+              files: [XFile(filePath)],
+              sharePositionOrigin: box!.localToGlobal(Offset.zero) & box.size,
+            ),
+          );
+        }
+
+        await file.delete();
+      }
+    };
   }
 }

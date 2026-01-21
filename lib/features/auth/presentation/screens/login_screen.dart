@@ -1,7 +1,5 @@
 import 'dart:async';
-import 'dart:ui';
 
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -26,9 +24,6 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final Connectivity connectivity = Connectivity();
-  StreamSubscription<List<ConnectivityResult>>? connectivitySubscription;
-
   StreamSubscription<User?>? streamSubscription;
 
   final formKey = GlobalKey<FormBuilderState>();
@@ -54,97 +49,73 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       });
     });
-    connectivitySubscription = connectivity.onConnectivityChanged.listen((
-      state,
-    ) {
-      if (state.contains(ConnectivityResult.none) && mounted) {
-        DraftlySnackbar.showSnackBar(
-          context,
-          'Отсутсвует подключение к интернету',
-        );
-      }
-    });
   }
 
   @override
   void dispose() {
-    connectivitySubscription?.cancel();
     streamSubscription?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        KeyboardVisibilityBuilder(
-          builder: (context, isKeyboardVisible, _) {
-            return DraftlyScaffold(
-              isScrollable: isKeyboardVisible,
-              body: FormBuilder(
-                key: formKey,
-                child: Column(
-                  spacing: 20,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Visibility(
-                      visible: !isKeyboardVisible,
-                      child: const Spacer(flex: 2),
-                    ),
-                    const GradientText('Вход'),
-                    DraftlyInput(
-                      name: 'email',
-                      title: 'e-mail',
-                      placeholder: 'Введите электронную почту',
-                      validator: LoginValidator.email,
-                      inputType: TextInputType.emailAddress,
-                      textInputAction: TextInputAction.next,
-                    ),
-                    DraftlyInput(
-                      name: 'password',
-                      title: 'Подтверждение пароля',
-                      placeholder: 'Введите пароль',
-                      isPassword: true,
-                      validator: LoginValidator.password,
-                    ),
-                    Visibility(
-                      visible: !isKeyboardVisible,
-                      child: const Spacer(),
-                    ),
-                  ],
+    return KeyboardVisibilityBuilder(
+      builder: (context, isKeyboardVisible, _) {
+        return DraftlyScaffold(
+          isLoading: isLoading,
+          isScrollable: isKeyboardVisible,
+          body: FormBuilder(
+            key: formKey,
+            child: Column(
+              spacing: 20,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Visibility(
+                  visible: !isKeyboardVisible,
+                  child: const Spacer(flex: 2),
                 ),
-              ),
-              bottomChild: Column(
-                spacing: 20,
-                children: [
-                  BlocBuilder<AuthBloc, AuthState>(
-                    builder: (context, state) {
-                      return DraftlyButton(
-                        text: 'Войти',
-                        onPressed: handleLogin,
-                        disabled: state is AuthLoading,
-                      );
-                    },
-                  ),
-                  DraftlyButton(
-                    text: 'Регистрация',
-                    type: DraftlyButtonType.stroke,
-                    onPressed: handleNavigateRegister,
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-        if (isLoading)
-          Positioned.fill(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: const Center(child: CircularProgressIndicator()),
+                const GradientText('Вход'),
+                DraftlyInput(
+                  name: 'email',
+                  title: 'e-mail',
+                  placeholder: 'Введите электронную почту',
+                  validator: LoginValidator.email,
+                  inputType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                ),
+                DraftlyInput(
+                  name: 'password',
+                  title: 'Подтверждение пароля',
+                  placeholder: 'Введите пароль',
+                  isPassword: true,
+                  validator: LoginValidator.password,
+                ),
+                Visibility(visible: !isKeyboardVisible, child: const Spacer()),
+              ],
             ),
           ),
-      ],
+          bottomChild: Column(
+            spacing: 20,
+            children: [
+              BlocBuilder<AuthBloc, AuthState>(
+                builder: (context, state) {
+                  return DraftlyButton(
+                    text: 'Войти',
+                    onPressed: handleLogin,
+                    disabled: state is AuthLoading,
+                  );
+                },
+              ),
+              DraftlyButton(
+                text: 'Регистрация',
+                type: DraftlyButtonType.stroke,
+                onPressed: handleNavigateRegister,
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

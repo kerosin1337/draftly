@@ -5,14 +5,22 @@ abstract class MainEvent {}
 class MainSaveImageEvent extends MainEvent {
   final Map<String, dynamic> port;
 
-  MainSaveImageEvent({required this.port});
+  final VoidCallback onSuccess;
+
+  MainSaveImageEvent({required this.port, required this.onSuccess});
 }
 
 class MainUpdateImageEvent extends MainEvent {
   final String id;
   final String image;
 
-  MainUpdateImageEvent({required this.id, required this.image});
+  final VoidCallback onSuccess;
+
+  MainUpdateImageEvent({
+    required this.id,
+    required this.image,
+    required this.onSuccess,
+  });
 }
 
 class MainGetImagesEvent extends MainEvent {

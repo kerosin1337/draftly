@@ -13,6 +13,8 @@ class DraftlyScaffold extends StatelessWidget {
   final bool isScrollable;
   final Widget? bottomChild;
 
+  final bool isLoading;
+
   const DraftlyScaffold({
     super.key,
     this.title,
@@ -21,61 +23,73 @@ class DraftlyScaffold extends StatelessWidget {
     required this.body,
     this.isScrollable = false,
     this.bottomChild,
+    this.isLoading = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: title != null
-          ? AppBar(
-              title: Text(title!),
-              flexibleSpace: backgroundAppBar(),
-              leading: leading,
-              actions: trailing != null ? [trailing!] : null,
-            )
-          : null,
-      extendBodyBehindAppBar: true,
-      body: GestureDetector(
-        onTap: FocusScope.of(context).unfocus,
-        child: DecoratedBox(
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              image: ImageAsset.background,
-              fit: BoxFit.cover,
-            ),
-          ),
-          child: DecoratedBox(
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                image: ImageAsset.backgroundPattern,
-                fit: BoxFit.cover,
+    return Stack(
+      children: [
+        Scaffold(
+          appBar: title != null
+              ? AppBar(
+                  title: Text(title!),
+                  flexibleSpace: backgroundAppBar(),
+                  leading: leading,
+                  actions: trailing != null ? [trailing!] : null,
+                )
+              : null,
+          extendBodyBehindAppBar: true,
+          body: GestureDetector(
+            onTap: FocusScope.of(context).unfocus,
+            child: DecoratedBox(
+              decoration: const BoxDecoration(
+                image: DecorationImage(
+                  image: ImageAsset.background,
+                  fit: BoxFit.cover,
+                ),
               ),
-            ),
-            child: SafeArea(
-              child: SizedBox(
-                height: MediaQuery.of(context).size.height,
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: isScrollable
-                          ? SingleChildScrollView(child: paddedBody)
-                          : paddedBody,
-                    ),
-                    if (bottomChild != null)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 10,
+              child: DecoratedBox(
+                decoration: const BoxDecoration(
+                  image: DecorationImage(
+                    image: ImageAsset.backgroundPattern,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                child: SafeArea(
+                  child: SizedBox(
+                    height: MediaQuery.of(context).size.height,
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: isScrollable
+                              ? SingleChildScrollView(child: paddedBody)
+                              : paddedBody,
                         ),
-                        child: bottomChild!,
-                      ),
-                  ],
+                        if (bottomChild != null)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 10,
+                            ),
+                            child: bottomChild!,
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
           ),
         ),
-      ),
+        if (isLoading)
+          Positioned.fill(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: const Center(child: CircularProgressIndicator()),
+            ),
+          ),
+      ],
     );
   }
 

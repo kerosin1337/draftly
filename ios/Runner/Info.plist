@@ -38,6 +38,8 @@
 		</array>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<key>NSCameraUsageDescription</key>
+        <string>Приложению требуется доступ к камере для библиотеки (image_picker).</string>
 		<key>NSPhotoLibraryUsageDescription</key>
         <string>Приложению требуется доступ к вашим фотографиям, чтобы установить их как фон.</string>
         <key>NSPhotoLibraryAddUsageDescription</key>

@@ -4,6 +4,9 @@ const Map<String, String> _errorMessage = {
   'password-match-validator': 'Пароли не совпадают',
 
   'unknown-error': 'Неизвестная ошибка',
+
+  'disconnected': 'Отсутсвует подключение к интернету',
+  'connected': 'Подключение к интернету восстановленно',
 };
 
 String getErrorMessage(String code) {
